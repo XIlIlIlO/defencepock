@@ -137,6 +137,16 @@
             color: var(--color-text);
         }
 
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
         input[type="number"]:focus {
             outline: 2px solid var(--color-primary);
             outline-offset: 2px;
@@ -208,14 +218,16 @@
         }
 
         .add-dca-btn {
-            width: auto;
-            padding: var(--space-8) var(--space-16);
+            width: 100%;
+            padding: var(--space-12) var(--space-16);
             margin-bottom: var(--space-16);
-            background: var(--color-text-secondary);
+            background: var(--color-primary);
+            color: white;
+            font-weight: 500;
         }
 
         .add-dca-btn:hover {
-            background: var(--color-slate-500);
+            background: var(--color-primary-hover);
         }
 
         .remove-btn {
@@ -231,6 +243,86 @@
         .remove-btn:hover {
             background: #cc0000;
         }
+
+        .scale-settings {
+            background: var(--color-input-bg);
+            padding: var(--space-16);
+            border-radius: var(--radius-base);
+            margin-bottom: var(--space-16);
+        }
+
+        .scale-params {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-12);
+            margin-bottom: var(--space-16);
+        }
+
+        .param-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-8);
+        }
+
+        .param-item label {
+            font-weight: 600;
+            margin: 0;
+            min-width: 20px;
+        }
+
+        .param-item input {
+            flex: 1;
+            padding: var(--space-8);
+        }
+
+        .scale-controls {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-12);
+        }
+
+        .scale-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-12);
+        }
+
+        .scale-row label {
+            min-width: 100px;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .scale-btn {
+            padding: var(--space-8) var(--space-16);
+            background: var(--color-surface);
+            color: var(--color-text);
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-base);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            min-width: 80px;
+        }
+
+        .scale-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .scale-btn:not(:disabled):hover {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        .scale-btn.active {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 15px rgba(var(--color-teal-500-rgb), 0.6);
+        }
     </style>
 </head>
 <body>
@@ -243,28 +335,96 @@
                 <h2>📊 기본 설정</h2>
                 <div class="input-section">
                     <div class="form-group">
-                        <label for="dcaSize">DCA Size (초기 사이즈)</label>
-                        <input type="number" id="dcaSize" value="10" step="1">
+                        <label for="initialSize">DCA Size (초기 사이즈)</label>
+                        <input type="number" id="initialSize" value="10" step="1" min="0" onkeydown="preventNegative(event)" oninput="syncInitialSize()">
+                    </div>
+                    <div class="form-group">
+                        <label for="initialProfit">Profit % (초기 익절 %)</label>
+                        <input type="number" id="initialProfit" value="5" step="0.1" min="0" onkeydown="preventNegative(event)" oninput="syncInitialProfit()">
                     </div>
                     <div class="form-group">
                         <label for="leverage">Leverage (레버리지)</label>
-                        <input type="number" id="leverage" value="20" step="1">
+                        <input type="number" id="leverage" value="20" step="1" min="1" onkeydown="preventNegative(event)">
                     </div>
                     <div class="form-group">
                         <label for="stopLoss">SL (손절 %)</label>
-                        <input type="number" id="stopLoss" value="700" step="10">
+                        <input type="number" id="stopLoss" value="700" step="10" min="0" onkeydown="preventNegative(event)">
+                    </div>
+                </div>
+
+                <h2>🎛️ 스케일 설정</h2>
+                <div class="scale-settings">
+                    <div class="scale-params">
+                        <div class="param-item">
+                            <label>n:</label>
+                            <input type="number" id="param-n" value="0" step="0.1" min="0" onkeydown="preventNegative(event)" oninput="updateScaleButtons()">
+                        </div>
+                        <div class="param-item">
+                            <label>m:</label>
+                            <input type="number" id="param-m" value="0" step="0.1" min="0" onkeydown="preventNegative(event)" oninput="updateScaleButtons()">
+                        </div>
+                        <div class="param-item">
+                            <label>l:</label>
+                            <input type="number" id="param-l" value="0" step="0.1" min="0" onkeydown="preventNegative(event)" oninput="updateScaleButtons()">
+                        </div>
+                        <div class="param-item">
+                            <label>a:</label>
+                            <input type="number" id="param-a" value="0" step="1" min="0" onkeydown="preventNegative(event)" oninput="updateScaleButtons()">
+                        </div>
+                        <div class="param-item">
+                            <label>b:</label>
+                            <input type="number" id="param-b" value="0" step="1" min="0" onkeydown="preventNegative(event)" oninput="updateScaleButtons()">
+                        </div>
+                        <div class="param-item">
+                            <label>c:</label>
+                            <input type="number" id="param-c" value="0" step="1" min="0" onkeydown="preventNegative(event)" oninput="updateScaleButtons()">
+                        </div>
+                    </div>
+                    
+                    <div class="scale-controls">
+                        <div class="scale-row">
+                            <label>DCA scale:</label>
+                            <button class="scale-btn" id="btn-xn" onclick="toggleScale('dca', 'multiply', 'n')" disabled>× n</button>
+                            <button class="scale-btn" id="btn-plus-a" onclick="toggleScale('dca', 'add', 'a')" disabled>+ a</button>
+                        </div>
+                        <div class="scale-row">
+                            <label>ROI scale:</label>
+                            <button class="scale-btn" id="btn-xm" onclick="toggleScale('roi', 'multiply', 'm')" disabled>× m</button>
+                            <button class="scale-btn" id="btn-plus-b" onclick="toggleScale('roi', 'add', 'b')" disabled>+ b</button>
+                        </div>
+                        <div class="scale-row">
+                            <label>Profit scale:</label>
+                            <button class="scale-btn" id="btn-xl" onclick="toggleScale('profit', 'multiply', 'l')" disabled>× l</button>
+                            <button class="scale-btn" id="btn-plus-c" onclick="toggleScale('profit', 'add', 'c')" disabled>+ c</button>
+                        </div>
                     </div>
                 </div>
 
                 <h2>📈 DCA 단계 설정</h2>
                 <button class="btn add-dca-btn" onclick="addDcaStep()">+ DCA 단계 추가</button>
+                <button class="btn" onclick="showTextInput()" style="margin-bottom: var(--space-16); background: var(--color-text-secondary);">로직 텍스트 입력</button>
+                
+                <div id="textInputModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+                    <div style="background: var(--color-surface); padding: var(--space-24); border-radius: var(--radius-lg); max-width: 500px; width: 90%;">
+                        <h3>DCA 로직 텍스트 입력</h3>
+                        <p style="font-size: 0.9rem; color: var(--color-text-secondary);">형식: DCA Size, Profit %, 변동률 (한 줄에 하나씩)</p>
+                        <textarea id="logicTextInput" style="width: 100%; height: 200px; padding: var(--space-12); border: 1px solid var(--color-border); border-radius: var(--radius-base); font-family: monospace; background: var(--color-surface); color: var(--color-text);" placeholder="예시:&#10;10,20,45&#10;10,25,100&#10;10,30,200&#10;10,35,300"></textarea>
+                        <div style="display: flex; gap: var(--space-12); margin-top: var(--space-16);">
+                            <button class="btn" onclick="applyTextLogic()" style="flex: 1;">적용</button>
+                            <button class="btn" onclick="closeTextInput()" style="flex: 1; background: var(--color-text-secondary);">취소</button>
+                        </div>
+                    </div>
+                </div>
+                
                 <div style="overflow-x: auto;">
                     <table class="dca-table">
                         <thead>
                             <tr>
                                 <th>단계</th>
                                 <th>DCA Size</th>
+                                <th>Profit %</th>
                                 <th>∇% (변동률)</th>
+                                <th>예상 익절금</th>
                                 <th>삭제</th>
                             </tr>
                         </thead>
@@ -315,8 +475,70 @@
     </div>
 
     <script>
-        // Initialize with default DCA steps
+        // Scale state management
+        let activeScales = {
+            dca: { type: null, param: null },
+            roi: { type: null, param: null },
+            profit: { type: null, param: null }
+        };
+
+        function updateScaleButtons() {
+            const params = {
+                n: parseFloat(document.getElementById('param-n').value) || 0,
+                a: parseFloat(document.getElementById('param-a').value) || 0,
+                m: parseFloat(document.getElementById('param-m').value) || 0,
+                b: parseFloat(document.getElementById('param-b').value) || 0,
+                l: parseFloat(document.getElementById('param-l').value) || 0,
+                c: parseFloat(document.getElementById('param-c').value) || 0
+            };
+
+            document.getElementById('btn-xn').disabled = params.n === 0;
+            document.getElementById('btn-plus-a').disabled = params.a === 0;
+            document.getElementById('btn-xm').disabled = params.m === 0;
+            document.getElementById('btn-plus-b').disabled = params.b === 0;
+            document.getElementById('btn-xl').disabled = params.l === 0;
+            document.getElementById('btn-plus-c').disabled = params.c === 0;
+        }
+
+        function toggleScale(category, type, param) {
+            const btnId = `btn-${type === 'multiply' ? 'x' : 'plus-'}${param}`;
+            const btn = document.getElementById(btnId);
+            
+            if (activeScales[category].type === type && activeScales[category].param === param) {
+                activeScales[category] = { type: null, param: null };
+                btn.classList.remove('active');
+            } else {
+                const allBtns = document.querySelectorAll('.scale-btn');
+                allBtns.forEach(b => {
+                    if (b.id.includes(category === 'dca' ? 'xn' : category === 'roi' ? 'xm' : 'xl') || 
+                        b.id.includes(category === 'dca' ? 'plus-a' : category === 'roi' ? 'plus-b' : 'plus-c')) {
+                        b.classList.remove('active');
+                    }
+                });
+                
+                activeScales[category] = { type, param };
+                btn.classList.add('active');
+            }
+        }
+
+        function getScaledValue(category, lastValue) {
+            const scale = activeScales[category];
+            if (!scale.type || !scale.param) return lastValue;
+
+            const paramValue = parseFloat(document.getElementById(`param-${scale.param}`).value) || 1;
+            
+            if (scale.type === 'multiply') {
+                return lastValue * paramValue;
+            } else if (scale.type === 'add') {
+                return lastValue + paramValue;
+            }
+            
+            return lastValue;
+        }
+
         function initializeDcaSteps() {
+            addDcaStepWithValues(10, 0, 5, true);
+            
             const defaultSteps = [
                 { size: 10, changePercent: 30 },
                 { size: 10, changePercent: 60 },
@@ -329,24 +551,62 @@
             ];
 
             defaultSteps.forEach(step => {
-                addDcaStepWithValues(step.size, step.changePercent);
+                addDcaStepWithValues(step.size, step.changePercent, 5, false);
             });
         }
 
         function addDcaStep() {
-            addDcaStepWithValues(10, 0);
+            const tbody = document.getElementById('dcaSteps');
+            const rows = tbody.rows;
+            
+            let lastSize = 10;
+            let lastChange = 0;
+            let lastProfit = 5;
+            
+            if (rows.length > 1) {
+                const lastRow = rows[rows.length - 1];
+                lastSize = parseFloat(lastRow.querySelector('.dca-size').value) || 10;
+                const lastChangeInput = lastRow.querySelector('.dca-change');
+                lastChange = lastChangeInput ? parseFloat(lastChangeInput.value) || 0 : 0;
+                lastProfit = parseFloat(lastRow.querySelector('.dca-profit').value) || 5;
+            }
+            
+            const newSize = getScaledValue('dca', lastSize);
+            const newChange = getScaledValue('roi', lastChange);
+            const newProfit = getScaledValue('profit', lastProfit);
+            
+            addDcaStepWithValues(newSize, newChange, newProfit, false);
         }
 
-        function addDcaStepWithValues(size, changePercent) {
+        function addDcaStepWithValues(size, changePercent, profit = 5, isInitial = false) {
             const tbody = document.getElementById('dcaSteps');
             const rowCount = tbody.rows.length;
             const row = tbody.insertRow();
             
+            const stepNumber = rowCount;
+            const changeTd = isInitial 
+                ? '<td style="background: var(--color-border); text-align: center;">-</td>'
+                : `<td><input type="number" class="dca-change" value="${changePercent}" step="1" min="0" data-row="${rowCount}" data-col="2" onfocus="this.select()" onkeydown="preventNegative(event); handleArrowKeys(event, this)"></td>`;
+            
+            const deleteBtn = isInitial
+                ? '<td></td>'
+                : '<td><button class="remove-btn" onclick="removeDcaStep(this)">삭제</button></td>';
+            
+            const sizeInput = isInitial
+                ? `<input type="number" class="dca-size initial-size" value="${size}" step="1" min="0" data-row="${rowCount}" data-col="0" onfocus="this.select()" onkeydown="preventNegative(event); handleArrowKeys(event, this)" oninput="syncFromTable()">`
+                : `<input type="number" class="dca-size" value="${size}" step="1" min="0" data-row="${rowCount}" data-col="0" onfocus="this.select()" onkeydown="preventNegative(event); handleArrowKeys(event, this)" onchange="calculateProfitValues()">`;
+            
+            const profitInput = isInitial
+                ? `<input type="number" class="dca-profit initial-profit" value="${profit}" step="0.1" min="0" data-row="${rowCount}" data-col="1" onfocus="this.select()" onkeydown="preventNegative(event); handleArrowKeys(event, this)" oninput="syncFromTable()">`
+                : `<input type="number" class="dca-profit" value="${profit}" step="0.1" min="0" data-row="${rowCount}" data-col="1" onfocus="this.select()" onkeydown="preventNegative(event); handleArrowKeys(event, this)" onchange="calculateProfitValues()">`;
+            
             row.innerHTML = `
-                <td>${rowCount + 1}</td>
-                <td><input type="number" class="dca-size" value="${size}" step="1"></td>
-                <td><input type="number" class="dca-change" value="${changePercent}" step="1"></td>
-                <td><button class="remove-btn" onclick="removeDcaStep(this)">삭제</button></td>
+                <td>${stepNumber}</td>
+                <td>${sizeInput}</td>
+                <td>${profitInput}</td>
+                ${changeTd}
+                <td class="expected-profit">-</td>
+                ${deleteBtn}
             `;
         }
 
@@ -359,32 +619,93 @@
         function updateStepNumbers() {
             const tbody = document.getElementById('dcaSteps');
             Array.from(tbody.rows).forEach((row, index) => {
-                row.cells[0].textContent = index + 1;
+                row.cells[0].textContent = index;
             });
         }
 
+        function preventNegative(event) {
+            if (event.key === '-' || event.key === 'e' || event.key === 'E') {
+                event.preventDefault();
+            }
+        }
+
+        function syncInitialSize() {
+            const initialSize = document.getElementById('initialSize').value;
+            const firstRowSizeInput = document.querySelector('.initial-size');
+            if (firstRowSizeInput) {
+                firstRowSizeInput.value = initialSize;
+                calculateProfitValues();
+            }
+        }
+
+        function syncInitialProfit() {
+            const initialProfit = document.getElementById('initialProfit').value;
+            const firstRowProfitInput = document.querySelector('.initial-profit');
+            if (firstRowProfitInput) {
+                firstRowProfitInput.value = initialProfit;
+                calculateProfitValues();
+            }
+        }
+
+        function syncFromTable() {
+            const firstRowSizeInput = document.querySelector('.initial-size');
+            const firstRowProfitInput = document.querySelector('.initial-profit');
+            
+            if (firstRowSizeInput) {
+                document.getElementById('initialSize').value = firstRowSizeInput.value;
+            }
+            if (firstRowProfitInput) {
+                document.getElementById('initialProfit').value = firstRowProfitInput.value;
+            }
+            calculateProfitValues();
+        }
+
+        function calculateProfitValues() {
+            const leverage = parseFloat(document.getElementById('leverage').value) || 1;
+            const rows = document.getElementById('dcaSteps').rows;
+            
+            let cumulativeSize = 0;
+            
+            for (let i = 0; i < rows.length; i++) {
+                const sizeInput = rows[i].querySelector('.dca-size');
+                const profitInput = rows[i].querySelector('.dca-profit');
+                const expectedProfitCell = rows[i].querySelector('.expected-profit');
+                
+                const size = parseFloat(sizeInput.value) || 0;
+                const profit = parseFloat(profitInput.value) || 0;
+                
+                cumulativeSize += size;
+                
+                const expectedProfit = (cumulativeSize / leverage) * (profit / 100);
+                expectedProfitCell.textContent = expectedProfit.toFixed(3);
+            }
+        }
+
         function calculate() {
-            // Get basic inputs
-            const initialSize = parseFloat(document.getElementById('dcaSize').value) || 0;
             const leverage = parseFloat(document.getElementById('leverage').value) || 1;
             const stopLoss = parseFloat(document.getElementById('stopLoss').value) || 0;
 
-            // Get DCA steps
-            const dcaSizes = [initialSize];
-            const changePercents = [0]; // First step has 0% change
+            calculateProfitValues();
+
+            const dcaSizes = [];
+            const changePercents = [];
             
             const rows = document.getElementById('dcaSteps').rows;
             for (let i = 0; i < rows.length; i++) {
                 const sizeInput = rows[i].querySelector('.dca-size');
                 const changeInput = rows[i].querySelector('.dca-change');
+                
                 dcaSizes.push(parseFloat(sizeInput.value) || 0);
-                changePercents.push(parseFloat(changeInput.value) || 0);
+                
+                if (changeInput) {
+                    changePercents.push(parseFloat(changeInput.value) || 0);
+                } else {
+                    changePercents.push(0);
+                }
             }
 
-            // Calculate results
             const results = calculateDefenseRange(dcaSizes, changePercents, leverage, stopLoss);
 
-            // Display results
             document.getElementById('resultTotal').textContent = results.totalDefense.toFixed(2) + '%';
             document.getElementById('resultLong').textContent = results.longDefense.toFixed(2) + '%';
             document.getElementById('resultShort').textContent = results.shortDefense.toFixed(2) + '%';
@@ -394,7 +715,6 @@
         function calculateDefenseRange(sizes, changePercents, leverage, stopLoss) {
             const n = sizes.length;
             
-            // Calculate cumulative sizes
             const cumulativeSizes = [];
             let sum = 0;
             for (let i = 0; i < n; i++) {
@@ -402,45 +722,34 @@
                 cumulativeSizes.push(sum);
             }
 
-            // Calculate DCA ROI (AJ column in Excel)
-            const dcaRoi = [0]; // AJ for first step is 0
+            const dcaRoi = [0];
             
             for (let i = 1; i < n; i++) {
-                // AJ[i] = (1 - (sizes[i] / cumulative_sum[i])) * changePercents[i]
                 const roi = (1 - (sizes[i] / cumulativeSizes[i])) * changePercents[i];
                 dcaRoi.push(roi);
             }
 
-            // Calculate cumulative percentage (AK column in Excel)
-            // AK[i] = IF(AJ[i]=0, 0, changePercents[i] - AJ[i-1])
             const cumulativePercent = [];
             
             for (let i = 0; i < n; i++) {
                 if (i === 0) {
-                    // First step: no cumulative percentage
                     cumulativePercent.push(0);
                 } else {
-                    // AK[i] = changePercents[i] - dcaRoi[i-1]
                     const ak = dcaRoi[i] === 0 ? 0 : (changePercents[i] - dcaRoi[i - 1]);
                     cumulativePercent.push(ak);
                 }
             }
 
-            // Add final AK value to reach stop loss
-            // Final AK = stopLoss - last_AJ
             const lastAJ = dcaRoi[n - 1];
             const finalAK = stopLoss - lastAJ;
             cumulativePercent.push(finalAK);
 
-            // Calculate total defense range (방어폭 결과값)
-            // Sum all AK values (starting from index 1, including the final AK)
             const sumCumulativePercent = cumulativePercent.slice(1).reduce((a, b) => a + b, 0);
             const totalDefense = sumCumulativePercent / leverage;
 
-            // Calculate Long defense (L 방어폭)
-            const longPrices = [1]; // Initial price = 1
-            const longAvgPrices = [1]; // Initial average price = 1
-            const longCoinCounts = [sizes[0] / 1]; // Initial coin count
+            const longPrices = [1];
+            const longAvgPrices = [1];
+            const longCoinCounts = [sizes[0] / 1];
             const longCumulativeCoinCounts = [sizes[0] / 1];
             
             for (let i = 1; i < n; i++) {
@@ -461,10 +770,9 @@
             const finalLongAvgPrice = longAvgPrices[n - 1];
             const longDefense = (1 - (finalLongAvgPrice * (100 - (stopLoss / leverage)) / 100)) * 100;
 
-            // Calculate Short defense (S 방어폭)
-            const shortPrices = [1]; // Initial price = 1
-            const shortAvgPrices = [1]; // Initial average price = 1
-            const shortCoinCounts = [sizes[0] / 1]; // Initial coin count
+            const shortPrices = [1];
+            const shortAvgPrices = [1];
+            const shortCoinCounts = [sizes[0] / 1];
             const shortCumulativeCoinCounts = [sizes[0] / 1];
             
             for (let i = 1; i < n; i++) {
@@ -485,7 +793,6 @@
             const finalShortAvgPrice = shortAvgPrices[n - 1];
             const shortDefense = ((finalShortAvgPrice * (100 + (stopLoss / leverage)) / 100) - 1) * 100;
 
-            // Calculate expected loss (예상 손절 금액)
             const totalMargin = cumulativeSizes[n - 1] / leverage;
             const expectedLoss = (totalMargin * stopLoss) / 100;
 
@@ -497,10 +804,116 @@
             };
         }
 
-        // Initialize on page load
+        function handleArrowKeys(event, currentInput) {
+            const currentRow = parseInt(currentInput.dataset.row);
+            const currentCol = parseInt(currentInput.dataset.col);
+            
+            let targetRow = currentRow;
+            let targetCol = currentCol;
+            
+            switch(event.key) {
+                case 'ArrowUp':
+                    event.preventDefault();
+                    targetRow = currentRow - 1;
+                    break;
+                case 'ArrowDown':
+                case 'Enter':
+                    event.preventDefault();
+                    targetRow = currentRow + 1;
+                    break;
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    targetCol = currentCol - 1;
+                    break;
+                case 'ArrowRight':
+                case 'Tab':
+                    if (event.key === 'Tab') event.preventDefault();
+                    targetCol = currentCol + 1;
+                    break;
+                default:
+                    return;
+            }
+            
+            // Constrain column (0: DCA Size, 1: Profit %, 2: Change %)
+            if (targetCol < 0) targetCol = 0;
+            if (targetCol > 2) targetCol = 2;
+            
+            // Find target input
+            const tbody = document.getElementById('dcaSteps');
+            if (targetRow < 0 || targetRow >= tbody.rows.length) return;
+            
+            const targetRowEl = tbody.rows[targetRow];
+            let targetInput = null;
+            
+            if (targetCol === 0) {
+                targetInput = targetRowEl.querySelector('.dca-size');
+            } else if (targetCol === 1) {
+                targetInput = targetRowEl.querySelector('.dca-profit');
+            } else if (targetCol === 2) {
+                targetInput = targetRowEl.querySelector('.dca-change');
+            }
+            
+            if (targetInput) {
+                targetInput.focus();
+                targetInput.select();
+            }
+        }
+
+        function showTextInput() {
+            document.getElementById('textInputModal').style.display = 'flex';
+            document.getElementById('logicTextInput').value = '';
+        }
+
+        function closeTextInput() {
+            document.getElementById('textInputModal').style.display = 'none';
+        }
+
+        function applyTextLogic() {
+            const text = document.getElementById('logicTextInput').value.trim();
+            if (!text) {
+                alert('텍스트를 입력해주세요.');
+                return;
+            }
+
+            const lines = text.split('\n').filter(line => line.trim());
+            const tbody = document.getElementById('dcaSteps');
+            
+            // Remove all rows except step 0
+            while (tbody.rows.length > 1) {
+                tbody.deleteRow(1);
+            }
+
+            // Parse and add new rows
+            lines.forEach((line, index) => {
+                const parts = line.split(',').map(p => p.trim());
+                if (parts.length !== 3) {
+                    alert(`줄 ${index + 1}의 형식이 올바르지 않습니다. 형식: DCA Size, Profit %, 변동률`);
+                    return;
+                }
+
+                const size = parseFloat(parts[0]);
+                const profit = parseFloat(parts[1]);
+                const change = parseFloat(parts[2]);
+
+                if (isNaN(size) || isNaN(profit) || isNaN(change)) {
+                    alert(`줄 ${index + 1}에 유효하지 않은 숫자가 있습니다.`);
+                    return;
+                }
+
+                addDcaStepWithValues(size, change, profit, false);
+            });
+
+            updateStepNumbers();
+            calculateProfitValues();
+            closeTextInput();
+        }
+
         window.onload = function() {
             initializeDcaSteps();
             calculate();
+            updateScaleButtons();
+            
+            document.getElementById('leverage').addEventListener('input', calculateProfitValues);
         };
     </script>
 </body>
