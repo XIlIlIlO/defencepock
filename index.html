@@ -403,6 +403,7 @@
                 <h2>📈 DCA 단계 설정</h2>
                 <button class="btn add-dca-btn" onclick="addDcaStep()">+ DCA 단계 추가</button>
                 <button class="btn" onclick="showTextInput()" style="margin-bottom: var(--space-16); background: var(--color-text-secondary);">로직 텍스트 입력</button>
+                <button class="btn" onclick="showExtractModal()" style="margin-bottom: var(--space-16); background: #4CAF50;">로직 추출</button>
                 
                 <div id="textInputModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
                     <div style="background: var(--color-surface); padding: var(--space-24); border-radius: var(--radius-lg); max-width: 500px; width: 90%;">
@@ -412,6 +413,18 @@
                         <div style="display: flex; gap: var(--space-12); margin-top: var(--space-16);">
                             <button class="btn" onclick="applyTextLogic()" style="flex: 1;">적용</button>
                             <button class="btn" onclick="closeTextInput()" style="flex: 1; background: var(--color-text-secondary);">취소</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="extractModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+                    <div style="background: var(--color-surface); padding: var(--space-24); border-radius: var(--radius-lg); max-width: 500px; width: 90%;">
+                        <h3>DCA 로직 추출</h3>
+                        <p style="font-size: 0.9rem; color: var(--color-text-secondary);">현재 설정된 DCA 로직 (1차부터)</p>
+                        <textarea id="extractedText" readonly style="width: 100%; height: 200px; padding: var(--space-12); border: 1px solid var(--color-border); border-radius: var(--radius-base); font-family: monospace; background: var(--color-surface); color: var(--color-text);"></textarea>
+                        <div style="display: flex; gap: var(--space-12); margin-top: var(--space-16);">
+                            <button class="btn" onclick="copyExtractedText()" style="flex: 1; background: #4CAF50;">복사하기</button>
+                            <button class="btn" onclick="closeExtractModal()" style="flex: 1; background: var(--color-text-secondary);">닫기</button>
                         </div>
                     </div>
                 </div>
@@ -906,6 +919,41 @@
             updateStepNumbers();
             calculateProfitValues();
             closeTextInput();
+        }
+
+        function showExtractModal() {
+            const tbody = document.getElementById('dcaSteps');
+            const rows = tbody.rows;
+            const lines = [];
+            
+            // Extract from step 1 onwards (skip step 0)
+            for (let i = 1; i < rows.length; i++) {
+                const sizeInput = rows[i].querySelector('.dca-size');
+                const profitInput = rows[i].querySelector('.dca-profit');
+                const changeInput = rows[i].querySelector('.dca-change');
+                
+                if (sizeInput && profitInput && changeInput) {
+                    const size = parseFloat(sizeInput.value) || 0;
+                    const profit = parseFloat(profitInput.value) || 0;
+                    const change = parseFloat(changeInput.value) || 0;
+                    
+                    lines.push(`${size},${profit},${change}`);
+                }
+            }
+            
+            document.getElementById('extractedText').value = lines.join('\n');
+            document.getElementById('extractModal').style.display = 'flex';
+        }
+
+        function closeExtractModal() {
+            document.getElementById('extractModal').style.display = 'none';
+        }
+
+        function copyExtractedText() {
+            const textarea = document.getElementById('extractedText');
+            textarea.select();
+            document.execCommand('copy');
+            alert('로직이 클립보드에 복사되었습니다!');
         }
 
         window.onload = function() {
