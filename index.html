@@ -402,18 +402,33 @@
                 cumulativeSizes.push(sum);
             }
 
-            // Calculate DCA ROI and cumulative percentage
-            const dcaRoi = [0]; // First element is 0
-            const cumulativePercent = [0];
+            // Calculate DCA ROI (AJ column in Excel)
+            const dcaRoi = [0]; // AJ for first step is 0
             
             for (let i = 1; i < n; i++) {
+                // AJ[i] = (1 - (sizes[i] / cumulative_sum[i])) * changePercents[i]
                 const roi = (1 - (sizes[i] / cumulativeSizes[i])) * changePercents[i];
                 dcaRoi.push(roi);
-                cumulativePercent.push(changePercents[i] - dcaRoi[i - 1]);
+            }
+
+            // Calculate cumulative percentage (AK column in Excel)
+            // AK[i] = IF(AJ[i]=0, 0, changePercents[i] - AJ[i-1])
+            const cumulativePercent = [];
+            
+            for (let i = 0; i < n; i++) {
+                if (i === 0) {
+                    // First step: no cumulative percentage
+                    cumulativePercent.push(0);
+                } else {
+                    // AK[i] = changePercents[i] - dcaRoi[i-1]
+                    const ak = dcaRoi[i] === 0 ? 0 : (changePercents[i] - dcaRoi[i - 1]);
+                    cumulativePercent.push(ak);
+                }
             }
 
             // Calculate total defense range (방어폭 결과값)
-            const sumCumulativePercent = cumulativePercent.reduce((a, b) => a + b, 0);
+            // Sum all AK values (starting from index 1, excluding the first 0)
+            const sumCumulativePercent = cumulativePercent.slice(1).reduce((a, b) => a + b, 0);
             const totalDefense = sumCumulativePercent / leverage;
 
             // Calculate Long defense (L 방어폭)
