@@ -426,8 +426,14 @@
                 }
             }
 
+            // Add final AK value to reach stop loss
+            // Final AK = stopLoss - last_AJ
+            const lastAJ = dcaRoi[n - 1];
+            const finalAK = stopLoss - lastAJ;
+            cumulativePercent.push(finalAK);
+
             // Calculate total defense range (방어폭 결과값)
-            // Sum all AK values (starting from index 1, excluding the first 0)
+            // Sum all AK values (starting from index 1, including the final AK)
             const sumCumulativePercent = cumulativePercent.slice(1).reduce((a, b) => a + b, 0);
             const totalDefense = sumCumulativePercent / leverage;
 
