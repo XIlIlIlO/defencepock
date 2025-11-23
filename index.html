@@ -1,202 +1,486 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>방어폭 계산 (최소 UI)</title>
-  <style>
-    :root { --gap: 6px; --pad: 10px; --radius: 10px; --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji'; }
-    * { box-sizing: border-box; }
-    body { font-family: var(--font); background: #0b0d12; color: #e6e6e6; margin: 0; padding: 24px; }
-    .wrap { max-width: 980px; margin: 0 auto; }
-    h1 { font-size: 20px; margin: 0 0 16px; font-weight: 700; }
-    .note { font-size: 13px; color: #cfcfcf; margin-bottom: 12px; }
-    .warn { color: #ffd166; font-weight: 600; }
-    table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: var(--radius); background: #121521; }
-    thead th { position: sticky; top: 0; background: #161a2a; }
-    th, td { padding: 10px 12px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.06); }
-    tbody tr:hover td { background: rgba(255,255,255,0.02); }
-    tfoot td { background: #161a2a; border-top: 1px solid rgba(255,255,255,0.08); }
-    input[type="number"] { width: 100%; background: #0f1320; border: 1px solid rgba(255,255,255,0.08); color: #e6e6e6; padding: 8px; border-radius: 8px; text-align: right; }
-    input[readonly] { opacity: 0.85; background: #0d111a; }
-    .row-sl { background: #1a2035; font-weight: 700; }
-    .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0 18px; }
-    .badge { display: inline-block; padding: 6px 10px; border-radius: 999px; background: #1a2035; font-size: 12px; }
-    .error { font-size: 13px; color: #ff6b6b; margin-top: 8px; min-height: 1.2em; }
-    .small { font-size: 12px; color: #9aa4b2; }
-    .footer { display:flex; justify-content: space-between; align-items: center; margin-top: 14px; gap: 10px; }
-    .btn { padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: #141a2a; color: #e6e6e6; cursor: pointer; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .muted { opacity: .75; }
-    @media (max-width: 700px) {
-      .meta { grid-template-columns: 1fr; }
-      th, td { padding: 8px; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>방어폭 계산기 (Long/Short 구분)</title>
+    <style>
+        :root {
+            --color-white: rgba(255, 255, 255, 1);
+            --color-cream-50: rgba(252, 252, 249, 1);
+            --color-cream-100: rgba(255, 255, 253, 1);
+            --color-gray-300: rgba(167, 169, 169, 1);
+            --color-slate-500: rgba(98, 108, 113, 1);
+            --color-charcoal-700: rgba(31, 33, 33, 1);
+            --color-charcoal-800: rgba(38, 40, 40, 1);
+            --color-teal-300: rgba(50, 184, 198, 1);
+            --color-teal-500: rgba(33, 128, 141, 1);
+            --color-teal-600: rgba(29, 116, 128, 1);
+            --color-brown-600-rgb: 94, 82, 64;
+            --color-teal-500-rgb: 33, 128, 141;
+            --color-gray-400-rgb: 119, 124, 124;
+            
+            --color-background: var(--color-cream-50);
+            --color-surface: var(--color-cream-100);
+            --color-text: var(--color-charcoal-700);
+            --color-text-secondary: var(--color-slate-500);
+            --color-primary: var(--color-teal-500);
+            --color-primary-hover: var(--color-teal-600);
+            --color-border: rgba(var(--color-brown-600-rgb), 0.2);
+            --color-input-bg: rgba(255, 255, 200, 0.3);
+            --color-output-bg: rgba(200, 180, 255, 0.2);
+            
+            --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --space-8: 8px;
+            --space-12: 12px;
+            --space-16: 16px;
+            --space-24: 24px;
+            --radius-base: 8px;
+            --radius-lg: 12px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --color-background: var(--color-charcoal-700);
+                --color-surface: var(--color-charcoal-800);
+                --color-text: var(--color-gray-300);
+                --color-text-secondary: rgba(var(--color-gray-300), 0.7);
+                --color-primary: var(--color-teal-300);
+                --color-border: rgba(var(--color-gray-400-rgb), 0.3);
+                --color-input-bg: rgba(255, 255, 100, 0.15);
+                --color-output-bg: rgba(180, 160, 255, 0.15);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family-base);
+            background: var(--color-background);
+            color: var(--color-text);
+            margin: 0;
+            padding: var(--space-24);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: var(--space-24);
+            color: var(--color-text);
+        }
+
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-24);
+            margin-bottom: var(--space-24);
+        }
+
+        @media (max-width: 768px) {
+            .calculator-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-24);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            margin-bottom: var(--space-16);
+            font-size: 1.25rem;
+            color: var(--color-text);
+        }
+
+        .input-section {
+            background: var(--color-input-bg);
+            padding: var(--space-16);
+            border-radius: var(--radius-base);
+            margin-bottom: var(--space-16);
+        }
+
+        .output-section {
+            background: var(--color-output-bg);
+            padding: var(--space-16);
+            border-radius: var(--radius-base);
+        }
+
+        .form-group {
+            margin-bottom: var(--space-16);
+        }
+
+        label {
+            display: block;
+            margin-bottom: var(--space-8);
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: var(--space-12);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-base);
+            font-size: 1rem;
+            background: var(--color-surface);
+            color: var(--color-text);
+        }
+
+        input[type="number"]:focus {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: var(--space-12) var(--space-16);
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-base);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .result-grid {
+            display: grid;
+            gap: var(--space-12);
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--space-12);
+            background: var(--color-surface);
+            border-radius: var(--radius-base);
+            border: 1px solid var(--color-border);
+        }
+
+        .result-label {
+            font-weight: 500;
+            color: var(--color-text-secondary);
+        }
+
+        .result-value {
+            font-weight: 600;
+            color: var(--color-text);
+            font-size: 1.1rem;
+        }
+
+        .dca-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: var(--space-16);
+        }
+
+        .dca-table th,
+        .dca-table td {
+            padding: var(--space-8);
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .dca-table th {
+            background: var(--color-input-bg);
+            font-weight: 600;
+        }
+
+        .dca-table input {
+            width: 100%;
+            padding: var(--space-8);
+        }
+
+        .add-dca-btn {
+            width: auto;
+            padding: var(--space-8) var(--space-16);
+            margin-bottom: var(--space-16);
+            background: var(--color-text-secondary);
+        }
+
+        .add-dca-btn:hover {
+            background: var(--color-slate-500);
+        }
+
+        .remove-btn {
+            padding: var(--space-8);
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .remove-btn:hover {
+            background: #cc0000;
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>방어폭 계산 (입·출력 전용 UI)</h1>
-    <div class="note"><span class="badge">주의</span> <span class="warn">∇% 열은 항상 이전 행보다 크거나 같아야 합니다.</span></div>
+    <div class="container">
+        <h1>🛡️ 방어폭 계산기 (Long/Short 구분)</h1>
+        
+        <div class="calculator-grid">
+            <!-- Input Section -->
+            <div class="card">
+                <h2>📊 기본 설정</h2>
+                <div class="input-section">
+                    <div class="form-group">
+                        <label for="dcaSize">DCA Size (초기 사이즈)</label>
+                        <input type="number" id="dcaSize" value="10" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="leverage">Leverage (레버리지)</label>
+                        <input type="number" id="leverage" value="20" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="stopLoss">SL (손절 %)</label>
+                        <input type="number" id="stopLoss" value="700" step="10">
+                    </div>
+                </div>
 
-    <div class="meta">
-      <div class="small">※ 이 화면은 사용자 입력과 결과 표시만 포함합니다. 계산 로직과 기타 데이터는 백엔드에 위치합니다.</div>
-      <div class="small" style="text-align:right;">필드 단위: DCA Size(수량/금액), ∇%(하락폭), Leverage(배율)</div>
-    </div>
+                <h2>📈 DCA 단계 설정</h2>
+                <button class="btn add-dca-btn" onclick="addDcaStep()">+ DCA 단계 추가</button>
+                <div style="overflow-x: auto;">
+                    <table class="dca-table">
+                        <thead>
+                            <tr>
+                                <th>단계</th>
+                                <th>DCA Size</th>
+                                <th>∇% (변동률)</th>
+                                <th>삭제</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dcaSteps">
+                            <!-- DCA steps will be added here dynamically -->
+                        </tbody>
+                    </table>
+                </div>
 
-    <table id="dca-table" aria-describedby="monotone-note">
-      <thead>
-        <tr>
-          <th>NO</th>
-          <th>DCA Size</th>
-          <th>∇%</th>
-          <th></th>
-          <th>Leverage</th>
-          <th>방어폭 결과값</th>
-          <th>예상손절금액</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Rows 0 ~ 20 -->
-      </tbody>
-      <tfoot>
-        <tr class="row-sl">
-          <td>SL</td>
-          <td></td>
-          <td><input type="number" inputmode="decimal" step="0.01" id="sl-delta" placeholder="120" /></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-        </tr>
-        <tr>
-          <td colspan="7">
-            <div class="footer">
-              <div class="small muted">행 추가 개수는 0~20으로 고정되어 있습니다.</div>
-              <div>
-                <button class="btn" id="btn-submit">저장/계산 요청</button>
-              </div>
+                <button class="btn" onclick="calculate()">계산하기</button>
             </div>
-            <div id="error" class="error" aria-live="polite"></div>
-          </td>
-        </tr>
-      </tfoot>
-    </table>
 
-    <div class="meta" style="margin-top:18px;">
-      <div class="small"><strong>변하는셀</strong></div>
-      <div class="small"><strong>결과셀</strong></div>
+            <!-- Output Section -->
+            <div class="card">
+                <h2>📋 계산 결과</h2>
+                <div class="output-section">
+                    <div class="result-grid">
+                        <div class="result-item">
+                            <span class="result-label">방어폭 결과값</span>
+                            <span class="result-value" id="resultTotal">-</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">L 방어폭 (Long)</span>
+                            <span class="result-value" id="resultLong">-</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">S 방어폭 (Short)</span>
+                            <span class="result-value" id="resultShort">-</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">예상 손절 금액</span>
+                            <span class="result-value" id="expectedLoss">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: var(--space-24);">
+                    <h3>💡 계산 설명</h3>
+                    <ul style="font-size: 0.9rem; color: var(--color-text-secondary);">
+                        <li><strong>방어폭 결과값:</strong> 전체 누적 변동률 / 레버리지</li>
+                        <li><strong>L 방어폭:</strong> Long 포지션의 평균가 대비 방어폭 %</li>
+                        <li><strong>S 방어폭:</strong> Short 포지션의 평균가 대비 방어폭 %</li>
+                        <li><strong>예상 손절 금액:</strong> (총 마진 × SL%) / 100</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-<script>
-(function(){
-  const tbody = document.querySelector('#dca-table tbody');
-  const errorBox = document.getElementById('error');
-  const btnSubmit = document.getElementById('btn-submit');
+    <script>
+        // Initialize with default DCA steps
+        function initializeDcaSteps() {
+            const defaultSteps = [
+                { size: 10, changePercent: 30 },
+                { size: 10, changePercent: 60 },
+                { size: 10, changePercent: 90 },
+                { size: 10, changePercent: 130 },
+                { size: 10, changePercent: 180 },
+                { size: 10, changePercent: 240 },
+                { size: 10, changePercent: 320 },
+                { size: 10, changePercent: 400 }
+            ];
 
-  // Initial seed values based on the user's example for row 0~3
-  const seed = [
-    { no: 0, dca: 80,  delta: '', lev: 20, res: 10.5, stop: 38.4 },
-    { no: 1, dca: 80,  delta: 30, lev: '', res: '',   stop: ''   },
-    { no: 2, dca: 160, delta: 60, lev: '', res: '',   stop: ''   },
-    { no: 3, dca: 320, delta: 90, lev: '', res: '',   stop: ''   }
-  ];
+            defaultSteps.forEach(step => {
+                addDcaStepWithValues(step.size, step.changePercent);
+            });
+        }
 
-  function makeRow(i, preset) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${i}</td>
-      <td><input type="number" inputmode="decimal" step="0.0001" name="dca_${i}" value="${preset?.dca ?? ''}" /></td>
-      <td><input type="number" inputmode="decimal" step="0.01" name="delta_${i}" value="${preset?.delta ?? ''}" /></td>
-      <td></td>
-      <td><input type="number" inputmode="decimal" step="0.01" name="lev_${i}" value="${preset?.lev ?? ''}" /></td>
-      <td><input type="number" inputmode="decimal" step="0.0001" name="res_${i}" value="${preset?.res ?? ''}" readonly /></td>
-      <td><input type="number" inputmode="decimal" step="0.0001" name="stop_${i}" value="${preset?.stop ?? ''}" readonly /></td>
-    `;
-    return tr;
-  }
+        function addDcaStep() {
+            addDcaStepWithValues(10, 0);
+        }
 
-  // Build 0..20 rows
-  for (let i = 0; i <= 20; i++) {
-    tbody.appendChild(makeRow(i, seed.find(s => s.no === i)));
-  }
+        function addDcaStepWithValues(size, changePercent) {
+            const tbody = document.getElementById('dcaSteps');
+            const rowCount = tbody.rows.length;
+            const row = tbody.insertRow();
+            
+            row.innerHTML = `
+                <td>${rowCount + 1}</td>
+                <td><input type="number" class="dca-size" value="${size}" step="1"></td>
+                <td><input type="number" class="dca-change" value="${changePercent}" step="1"></td>
+                <td><button class="remove-btn" onclick="removeDcaStep(this)">삭제</button></td>
+            `;
+        }
 
-  function validateMonotone() {
-    const deltas = [];
-    for (let i = 0; i <= 20; i++) {
-      const el = document.querySelector(`input[name="delta_${i}"]`);
-      const val = el && el.value !== '' ? Number(el.value) : null;
-      deltas.push(val);
-    }
-    // Check non-decreasing: delta[i] >= delta[i-1] for all defined values
-    for (let i = 1; i < deltas.length; i++) {
-      if (deltas[i] != null && deltas[i-1] != null && deltas[i] < deltas[i-1]) {
-        return { ok: false, index: i };
-      }
-    }
-    return { ok: true };
-  }
+        function removeDcaStep(btn) {
+            const row = btn.closest('tr');
+            row.remove();
+            updateStepNumbers();
+        }
 
-  function showError(msg) { errorBox.textContent = msg || ''; }
-  function clearError() { showError(''); }
+        function updateStepNumbers() {
+            const tbody = document.getElementById('dcaSteps');
+            Array.from(tbody.rows).forEach((row, index) => {
+                row.cells[0].textContent = index + 1;
+            });
+        }
 
-  // Live validation
-  tbody.addEventListener('input', (e) => {
-    if (e.target && e.target.name && e.target.name.startsWith('delta_')) {
-      const check = validateMonotone();
-      if (!check.ok) {
-        showError(`∇%는 이전 행보다 작을 수 없습니다. (행 ${check.index})`);
-      } else {
-        clearError();
-      }
-    }
-  });
+        function calculate() {
+            // Get basic inputs
+            const initialSize = parseFloat(document.getElementById('dcaSize').value) || 0;
+            const leverage = parseFloat(document.getElementById('leverage').value) || 1;
+            const stopLoss = parseFloat(document.getElementById('stopLoss').value) || 0;
 
-  // Submit handler (placeholder that posts only user-entered values; backend handles computation)
-  btnSubmit.addEventListener('click', async () => {
-    const payload = { rows: [], sl_delta: null };
-    for (let i = 0; i <= 20; i++) {
-      const dca = document.querySelector(`input[name="dca_${i}"]`)?.value;
-      const delta = document.querySelector(`input[name="delta_${i}"]`)?.value;
-      const lev = document.querySelector(`input[name="lev_${i}"]`)?.value;
-      const res = document.querySelector(`input[name="res_${i}"]`)?.value;
-      const stop = document.querySelector(`input[name="stop_${i}"]`)?.value;
-      payload.rows.push({
-        no: i,
-        dca: dca === '' ? null : Number(dca),
-        delta: delta === '' ? null : Number(delta),
-        lev: lev === '' ? null : Number(lev),
-        res: res === '' ? null : Number(res),        // read-only placeholders to display server results
-        stop: stop === '' ? null : Number(stop)      // read-only placeholders to display server results
-      });
-    }
-    const sl = document.getElementById('sl-delta').value;
-    payload.sl_delta = sl === '' ? null : Number(sl);
+            // Get DCA steps
+            const dcaSizes = [initialSize];
+            const changePercents = [0]; // First step has 0% change
+            
+            const rows = document.getElementById('dcaSteps').rows;
+            for (let i = 0; i < rows.length; i++) {
+                const sizeInput = rows[i].querySelector('.dca-size');
+                const changeInput = rows[i].querySelector('.dca-change');
+                dcaSizes.push(parseFloat(sizeInput.value) || 0);
+                changePercents.push(parseFloat(changeInput.value) || 0);
+            }
 
-    const check = validateMonotone();
-    if (!check.ok) {
-      showError(`∇%는 이전 행보다 작을 수 없습니다. (행 ${check.index})`);
-      return;
-    }
-    clearError();
+            // Calculate results
+            const results = calculateDefenseRange(dcaSizes, changePercents, leverage, stopLoss);
 
-    // --- Backend wiring placeholder ---
-    // Replace with your endpoint, then populate the read-only result cells from the response.
-    // Example:
-    // const res = await fetch('/api/dca/compute', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    // const data = await res.json(); // { rows: [ { res, stop } ... ] }
-    // data.rows.forEach((row, i) => {
-    //   if (row && typeof row.res === 'number') document.querySelector(`input[name="res_${i}"]`).value = row.res;
-    //   if (row && typeof row.stop === 'number') document.querySelector(`input[name="stop_${i}"]`).value = row.stop;
-    // });
-    // ----------------------------------
+            // Display results
+            document.getElementById('resultTotal').textContent = results.totalDefense.toFixed(2) + '%';
+            document.getElementById('resultLong').textContent = results.longDefense.toFixed(2) + '%';
+            document.getElementById('resultShort').textContent = results.shortDefense.toFixed(2) + '%';
+            document.getElementById('expectedLoss').textContent = results.expectedLoss.toFixed(2);
+        }
 
-    // Temporary local echo just to show the payload in console for developers.
-    console.log('POST payload (send to backend):', payload);
-    showError('전송 준비 완료. 백엔드 엔드포인트에 연결하면 결과셀이 자동으로 채워집니다.');
-  });
-})();
-</script>
+        function calculateDefenseRange(sizes, changePercents, leverage, stopLoss) {
+            const n = sizes.length;
+            
+            // Calculate cumulative sizes
+            const cumulativeSizes = [];
+            let sum = 0;
+            for (let i = 0; i < n; i++) {
+                sum += sizes[i];
+                cumulativeSizes.push(sum);
+            }
+
+            // Calculate DCA ROI and cumulative percentage
+            const dcaRoi = [0]; // First element is 0
+            const cumulativePercent = [0];
+            
+            for (let i = 1; i < n; i++) {
+                const roi = (1 - (sizes[i] / cumulativeSizes[i])) * changePercents[i];
+                dcaRoi.push(roi);
+                cumulativePercent.push(changePercents[i] - dcaRoi[i - 1]);
+            }
+
+            // Calculate total defense range (방어폭 결과값)
+            const sumCumulativePercent = cumulativePercent.reduce((a, b) => a + b, 0);
+            const totalDefense = sumCumulativePercent / leverage;
+
+            // Calculate Long defense (L 방어폭)
+            const longPrices = [1]; // Initial price = 1
+            const longAvgPrices = [1]; // Initial average price = 1
+            const longCoinCounts = [sizes[0] / 1]; // Initial coin count
+            const longCumulativeCoinCounts = [sizes[0] / 1];
+            
+            for (let i = 1; i < n; i++) {
+                const prevAvgPrice = longAvgPrices[i - 1];
+                const newPrice = prevAvgPrice * (100 - (changePercents[i] / leverage)) / 100;
+                longPrices.push(newPrice);
+                
+                const coinCount = sizes[i] / newPrice;
+                longCoinCounts.push(coinCount);
+                
+                const cumulativeCoinCount = longCumulativeCoinCounts[i - 1] + coinCount;
+                longCumulativeCoinCounts.push(cumulativeCoinCount);
+                
+                const avgPrice = cumulativeSizes[i] / cumulativeCoinCount;
+                longAvgPrices.push(avgPrice);
+            }
+            
+            const finalLongAvgPrice = longAvgPrices[n - 1];
+            const longDefense = (1 - (finalLongAvgPrice * (100 - (stopLoss / leverage)) / 100)) * 100;
+
+            // Calculate Short defense (S 방어폭)
+            const shortPrices = [1]; // Initial price = 1
+            const shortAvgPrices = [1]; // Initial average price = 1
+            const shortCoinCounts = [sizes[0] / 1]; // Initial coin count
+            const shortCumulativeCoinCounts = [sizes[0] / 1];
+            
+            for (let i = 1; i < n; i++) {
+                const prevAvgPrice = shortAvgPrices[i - 1];
+                const newPrice = prevAvgPrice * (100 + (changePercents[i] / leverage)) / 100;
+                shortPrices.push(newPrice);
+                
+                const coinCount = sizes[i] / newPrice;
+                shortCoinCounts.push(coinCount);
+                
+                const cumulativeCoinCount = shortCumulativeCoinCounts[i - 1] + coinCount;
+                shortCumulativeCoinCounts.push(cumulativeCoinCount);
+                
+                const avgPrice = cumulativeSizes[i] / cumulativeCoinCount;
+                shortAvgPrices.push(avgPrice);
+            }
+            
+            const finalShortAvgPrice = shortAvgPrices[n - 1];
+            const shortDefense = ((finalShortAvgPrice * (100 + (stopLoss / leverage)) / 100) - 1) * 100;
+
+            // Calculate expected loss (예상 손절 금액)
+            const totalMargin = cumulativeSizes[n - 1] / leverage;
+            const expectedLoss = (totalMargin * stopLoss) / 100;
+
+            return {
+                totalDefense,
+                longDefense,
+                shortDefense,
+                expectedLoss
+            };
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            initializeDcaSteps();
+            calculate();
+        };
+    </script>
 </body>
 </html>
