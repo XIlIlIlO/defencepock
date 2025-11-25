@@ -891,7 +891,7 @@
                 return;
             }
 
-            const lines = text.split('\n').filter(line => line.trim());
+            const lines = text.split('\n').map(line => line.replace(/"/g, '').trim()).filter(line => line.length > 0);
             const tbody = document.getElementById('dcaSteps');
             
             // Remove all rows except step 0
