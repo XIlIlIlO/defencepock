@@ -868,7 +868,10 @@
             
             if (targetInput) {
                 targetInput.focus();
-                targetInput.select();
+                // Use setTimeout to ensure select() runs after focus completes
+                setTimeout(() => {
+                    targetInput.select();
+                }, 0);
             }
         }
 
